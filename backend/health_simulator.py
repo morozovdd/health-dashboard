@@ -27,7 +27,7 @@ class HealthMetrics:
         
         # Location context
         self.location_type = "indoor"  # indoor, outdoor, vehicle
-        self.gps_coordinates = {"latitude": 0.0, "longitude": 0.0}
+        self.gps_coordinates = {"latitude": 40.756870, "longitude": -74.001762}
         
         # Accident simulation
         self.in_accident = False
