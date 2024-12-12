@@ -1,5 +1,4 @@
-// src/components/HealthDashboard.jsx
-'use client'
+"use client"
 
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -9,7 +8,10 @@ import {
     Activity,
     AlertCircle,
     Timer,
-    Compass
+    Compass,
+    CarFront,
+    PersonStanding,
+    Dumbbell
 } from 'lucide-react';
 
 const CustomAlert = ({ title, description, icon: Icon }) => (
@@ -34,12 +36,76 @@ const MetricCard = ({ title, value, unit, icon: Icon, color, warning }) => (
     </div>
 );
 
+const SimulationControl = ({ onSimulate }) => (
+    <div className="bg-black border-2 border-gray-800 rounded-lg shadow p-6 mb-8">
+        <h2 className="text-lg font-semibold text-gray-300 mb-4">Accident Simulation Controls</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <button
+                onClick={() => onSimulate('car_crash')}
+                className="flex items-center justify-center gap-2 bg-red-900/30 hover:bg-red-900/50 text-red-500 border-2 border-red-900 rounded-lg p-3 transition-all duration-300"
+            >
+                <CarFront className="w-5 h-5" />
+                Simulate Car Crash
+            </button>
+            <button
+                onClick={() => onSimulate('fall')}
+                className="flex items-center justify-center gap-2 bg-orange-900/30 hover:bg-orange-900/50 text-orange-500 border-2 border-orange-900 rounded-lg p-3 transition-all duration-300"
+            >
+                <PersonStanding className="w-5 h-5" />
+                Simulate Fall
+            </button>
+            <button
+                onClick={() => onSimulate('sports_injury')}
+                className="flex items-center justify-center gap-2 bg-yellow-900/30 hover:bg-yellow-900/50 text-yellow-500 border-2 border-yellow-900 rounded-lg p-3 transition-all duration-300"
+            >
+                <Dumbbell className="w-5 h-5" />
+                Simulate Sports Injury
+            </button>
+        </div>
+    </div>
+);
+
+const AccidentAlert = ({ accident }) => (
+    <div className="mb-6 bg-red-900/50 border-2 border-red-500 rounded-lg p-4 text-white">
+        <div className="flex items-center gap-2 mb-2">
+            <AlertCircle className="h-5 w-5 text-red-500" />
+            <h3 className="font-semibold">Accident Detected</h3>
+        </div>
+        <div className="space-y-2">
+            <p className="text-gray-300">Type: {accident.accident_type.replace('_', ' ').toUpperCase()}</p>
+            <p className="text-gray-300">Phase: {accident.accident_phase.replace('_', ' ')}</p>
+            <p className="text-gray-300">Elapsed time: {Math.round(accident.elapsed_time)} seconds</p>
+        </div>
+    </div>
+);
+
 export default function HealthDashboard() {
     const [metrics, setMetrics] = useState(null);
     const [history, setHistory] = useState([]);
     const [lastUpdate, setLastUpdate] = useState(new Date());
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    const simulateAccident = async (type) => {
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/health/user123/simulate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ accident_type: type }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            fetchMetrics();
+        } catch (error) {
+            console.error('Error simulating accident:', error);
+            setError('Failed to simulate accident');
+        }
+    };
 
     const fetchMetrics = async () => {
         try {
@@ -114,7 +180,13 @@ export default function HealthDashboard() {
                     </div>
                 </div>
 
-                {metrics.movement_data.activity_state === 'fallen' &&
+                <SimulationControl onSimulate={simulateAccident} />
+
+                {metrics?.accident_data && (
+                    <AccidentAlert accident={metrics.accident_data} />
+                )}
+
+                {metrics?.movement_data?.activity_state === 'fallen' &&
                     metrics.movement_data.minutes_since_last_movement > 5 && (
                         <CustomAlert
                             icon={AlertCircle}
